@@ -18,7 +18,7 @@ routes.post("/songs", upload.single("audio"), async (req, res) => {
     const newSong = new Song({
       title: req.body.title,
       artist: req.body.artist,
-      mood: req.body.mood,
+      emotion: req.body.emotion || req.body.mood, // <- accept either
       audio: fileData.url
     });
 
@@ -30,7 +30,7 @@ routes.post("/songs", upload.single("audio"), async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: error.message });
+    res.status(406).json({ error: error.message });
   }
 });
 

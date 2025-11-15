@@ -33,7 +33,6 @@ const Playlist = ({ songs, detectedEmotion }) => {
             <div>
               <h1 className="text-2xl text-white">{song.title}</h1>
               <h4 className="text-gray-300">{song.artist}</h4>
-              <p className="text-sm text-gray-400">Mood: {song.mood}</p>
             </div>
             <div>
               {isPlaying === index && (
@@ -47,7 +46,7 @@ const Playlist = ({ songs, detectedEmotion }) => {
               )}
               <button
                 onClick={() => handlePlayPause(index)}
-                className="bg-blue-500 p-2 rounded-full hover:bg-blue-600"
+                className="bg-blue-500 px-3 py-2 rounded-full hover:bg-blue-600"
               >
                 {isPlaying === index ? (
                   <i className="ri-pause-line text-white"></i>

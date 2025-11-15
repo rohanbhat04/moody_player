@@ -2,43 +2,33 @@ import React, { useEffect, useRef } from "react";
 import * as faceapi from "face-api.js";
 import axios from 'axios';
 
-export default function FacialExpression({setSongs}) {
+export default function FacialExpression({ setSongs, onEmotionDetected }) {
   const videoRef = useRef();
   const canvasRef = useRef();
 
   const handleExpressionDetected = async (expression) => {
     try {
-      console.log('Detected expression:', expression);
       const response = await fetch(`http://localhost:3000/songs/${expression}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
       const data = await response.json();
-      console.log('Fetched songs:', data);
-      setSongs(data); // Make sure this is the songs array
+      setSongs(data);
     } catch (error) {
       console.error('Error fetching songs:', error);
     }
   };
 
   async function detectMood() {
-    console.log("detectMood function executed");
     const detections = await faceapi
       .detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions())
       .withFaceExpressions();
 
-    if (!detections || detections.length === 0) {
-      console.log("no face detected!");
-      return;
-    }
+    if (!detections || detections.length === 0) return;
 
     const canvas = canvasRef.current;
     const displaySize = {
       width: videoRef.current.videoWidth,
       height: videoRef.current.videoHeight,
     };
+
     faceapi.matchDimensions(canvas, displaySize);
 
     const resized = faceapi.resizeResults(detections, displaySize);
@@ -56,9 +46,8 @@ export default function FacialExpression({setSongs}) {
       }
     }
 
-    console.log(curExpression);
-
     handleExpressionDetected(curExpression);
+    onEmotionDetected(curExpression);
   }
 
   useEffect(() => {
@@ -71,16 +60,13 @@ export default function FacialExpression({setSongs}) {
     const startVideo = () => {
       navigator.mediaDevices
         .getUserMedia({ video: true })
-        .then((stream) => {
-          videoRef.current.srcObject = stream;
-        })
+        .then((stream) => (videoRef.current.srcObject = stream))
         .catch((err) => console.error("Error accessing webcam: ", err));
     };
 
     loadModels().then(startVideo);
   }, []);
 
-  // Modify detectMood to run less frequently
   useEffect(() => {
     const detectMoodInterval = setInterval(async () => {
       if (videoRef.current) {
@@ -98,39 +84,58 @@ export default function FacialExpression({setSongs}) {
               curExpression = expression;
             }
           }
-          
+
           handleExpressionDetected(curExpression);
+          onEmotionDetected(curExpression);
         }
       }
-    }, 3000); // Check every 3 seconds
+    }, 3000);
 
     return () => clearInterval(detectMoodInterval);
   }, []);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-start">
-      {/* Video + Canvas */}
-      <div className="relative rounded-xl overflow-hidden w-full max-w-[514px] aspect-video">
-        <video ref={videoRef} autoPlay muted className="w-full h-auto" />
+    <div className="flex flex-col lg:flex-row gap-8 items-start">
+
+      {/* VIDEO BOX */}
+      <div className="relative w-full max-w-[550px] aspect-video rounded-xl 
+                      overflow-hidden border border-gray-700 shadow-xl 
+                      bg-gray-900/40 backdrop-blur-md">
+
+        <video 
+          ref={videoRef} 
+          autoPlay 
+          muted 
+          className="w-full h-full object-cover"
+        />
+
         <canvas
           ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-full"
+          className="absolute inset-0 w-full h-full"
         />
+
       </div>
 
-      {/* Text + Button */}
-      <div className="text-center lg:text-left max-w-lg">
-        <h1 className="text-2xl mb-4">Live Mood Detection</h1>
-        <p className="mb-4">
-          Your current mood will be analysed in real-time. Enjoy the music
-          tailored to your feeling. Just click the button to detect your mood.
+      {/* Right side text + button */}
+      <div className="flex flex-col justify-center gap-4 max-w-md">
+
+        <p className="text-gray-300 leading-relaxed">
+          Your facial expressions are analyzed in real-time.
+          Based on the detected mood, music will be recommended automatically.
         </p>
+
         <button
-          className="bg-blue-400 hover:bg-blue-500 text-white px-4 py-2 rounded transition-colors"
           onClick={detectMood}
+          className="px-6 py-3 rounded-lg text-lg font-semibold 
+                     bg-indigo-500 hover:bg-indigo-600 
+                     transition-all duration-200 shadow-lg"
         >
           Detect Mood
         </button>
+
+        <div className="mt-2 text-sm text-gray-400">
+          Tip: Smile, frown, surprise → get different playlists!
+        </div>
       </div>
     </div>
   );
